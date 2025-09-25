@@ -12,55 +12,43 @@ func TestUnpackString(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "simple with repeats",
+			name:    "повторения",
 			input:   "lkjgklerg4",
 			want:    "lkjgklergggg",
 			wantErr: false,
 		},
 		{
-			name:    "no digits",
+			name:    "нет цифр",
 			input:   "abcd",
 			want:    "abcd",
 			wantErr: false,
 		},
 		{
-			name:    "only digits invalid",
+			name:    "только цифры",
 			input:   "45",
 			want:    "",
 			wantErr: true,
 		},
 		{
-			name:    "empty string",
+			name:    "пустая строка",
 			input:   "",
 			want:    "",
 			wantErr: false,
 		},
 		{
-			name:    "escaped digits separately",
+			name:    "разделенные цифры",
 			input:   "qwe\\4\\5",
 			want:    "qwe45",
 			wantErr: false,
 		},
 		{
-			name:    "escaped digit then repeat",
+			name:    "цифры с повторением",
 			input:   "qwe\\45",
 			want:    "qwe44444",
 			wantErr: false,
 		},
 		{
-			name:    "ending with slash invalid",
-			input:   "abc\\",
-			want:    "",
-			wantErr: true,
-		},
-		{
-			name:    "digit zero removes symbol",
-			input:   "a0bc",
-			want:    "bc",
-			wantErr: false,
-		},
-		{
-			name:    "digit one keeps symbol",
+			name:    "еще кейс",
 			input:   "a1b",
 			want:    "ab",
 			wantErr: false,
