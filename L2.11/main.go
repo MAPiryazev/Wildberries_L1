@@ -1,5 +1,7 @@
 package main
 
+//сложность - O(n * m * log(m))
+
 import (
 	"bufio"
 	"fmt"
@@ -25,9 +27,10 @@ func main() {
 	}
 
 	mapa := make(map[string]*node)
-	for _, val := range inputStr {
+	for _, val := range inputStr { //цикл по всем словам в строке O(n)
 		sliceRune := []rune(val)
-		sort.Slice(sliceRune, func(i, j int) bool {
+		sort.Slice(sliceRune, func(i, j int) bool { // сортировка слайсов в цикле
+			// за O(m*log(m)) т.к. в go используется quickSort
 			return sliceRune[i] < sliceRune[j]
 		})
 		_, ok := mapa[string(sliceRune)]
