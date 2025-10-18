@@ -8,7 +8,7 @@ services:
       - "27419:5432"
     volumes:
       - ./migrations:/docker-entrypoint-initdb.d
-      - calendar_pgdata:/var/lib/posgresql/data
+      - calendar_pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
       interval: 10s
@@ -19,4 +19,4 @@ services:
 
 
 volumes:
-  calendar_pgdata
+  calendar_pgdata:

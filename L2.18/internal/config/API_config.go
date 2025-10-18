@@ -12,6 +12,7 @@ type APIConfig struct {
 	Port string
 }
 
+// LoadAPIConfig принимает путь до env файла и возвращает порт для api
 func LoadAPIConfig(path string) *APIConfig {
 	err := godotenv.Load(path)
 	if err != nil {
