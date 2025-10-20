@@ -6,3 +6,5 @@ create table Events(
     created_at timestamp default now(),
     updated_at timestamp default now()
 );
+
+create index date_idx on Events(date);

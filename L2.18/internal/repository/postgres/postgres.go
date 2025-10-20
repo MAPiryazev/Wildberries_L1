@@ -9,7 +9,7 @@ import (
 	"calendar/internal/config"
 	"calendar/internal/models"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // драйвер
 )
 
 // PostgresStorage реализует хранилище в соответствии с интерфейсом storage
@@ -23,7 +23,7 @@ func NewPostgresStorage(cfg *config.DBPSQLConfig) (*PostgresStorage, error) {
 
 	db, err := sql.Open("postgres", dbCredentials)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", "ошибка создания подключения", err)
+		return nil, fmt.Errorf("ошибка создания подключения: %w", err)
 	}
 
 	db.SetMaxOpenConns(cfg.MaxOpenConns)
@@ -32,7 +32,7 @@ func NewPostgresStorage(cfg *config.DBPSQLConfig) (*PostgresStorage, error) {
 
 	err = db.Ping()
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", "не удалось подключиться к БД", err)
+		return nil, fmt.Errorf("не удалось подключиться к БД %w", err)
 	}
 
 	return &PostgresStorage{db: db}, nil
