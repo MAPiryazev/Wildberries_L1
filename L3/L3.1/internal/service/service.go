@@ -52,12 +52,14 @@ func NewNotificationService(
 }
 
 // CreateNotification — создаёт новое уведомление
-func (ns *NotificationService) CreateNotification(ctx context.Context, payload string, sendAt time.Time) (string, error) {
+func (ns *NotificationService) CreateNotification(ctx context.Context, to, subject, body string, sendAt time.Time) (string, error) {
 	id := uuid.New().String()
 
 	rabbitMsg := &models.RabbitMQMessage{
 		ID:         id,
-		Payload:    payload,
+		To:         to,
+		Subject:    subject,
+		Body:       body,
 		SendAt:     sendAt,
 		RetryCount: 0,
 	}
