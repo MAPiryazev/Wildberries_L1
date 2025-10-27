@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/rabbitmq/amqp091-go"
@@ -69,6 +70,16 @@ func (rc *RabbitMQClient) Publish(ctx context.Context, queueName string, message
 
 // Consume — читает сообщения из очереди и вызывает обработчик для каждого.
 func (rc *RabbitMQClient) Consume(ctx context.Context, queueName string, handler func(msg *models.RabbitMQMessage) error) error {
+	// Создаем очередь если её нет
+	_, err := rc.channel.QueueDeclare(
+		queueName, true, false, false, false, nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare queue %s: %w", queueName, err)
+	}
+
+	log.Printf("[RabbitMQ] Начинаем чтение из очереди: %s", queueName)
+
 	msgs, err := rc.channel.Consume(
 		queueName,
 		"", false, false, false, false, nil,
@@ -77,18 +88,25 @@ func (rc *RabbitMQClient) Consume(ctx context.Context, queueName string, handler
 		return fmt.Errorf("failed to start consuming: %w", err)
 	}
 
+	log.Printf("[RabbitMQ] Успешно начали чтение из очереди: %s", queueName)
+
 	go func() {
 		for d := range msgs {
 			var m models.RabbitMQMessage
 			if err := json.Unmarshal(d.Body, &m); err != nil {
+				log.Printf("[RabbitMQ] Ошибка парсинга сообщения: %v", err)
 				d.Nack(false, false) // отклоняем без повторной доставки
 				continue
 			}
 
+			log.Printf("[RabbitMQ] Получено сообщение из очереди %s: ID=%s", queueName, m.ID)
+
 			if err := handler(&m); err != nil {
+				log.Printf("[RabbitMQ] Ошибка обработки сообщения ID=%s: %v", m.ID, err)
 				// повторная доставка при ошибке
 				d.Nack(false, true)
 			} else {
+				log.Printf("[RabbitMQ] Сообщение ID=%s успешно обработано", m.ID)
 				d.Ack(false)
 			}
 		}
@@ -96,7 +114,39 @@ func (rc *RabbitMQClient) Consume(ctx context.Context, queueName string, handler
 
 	// блокируем до завершения контекста
 	<-ctx.Done()
+	log.Printf("[RabbitMQ] Чтение из очереди %s остановлено", queueName)
 	return ctx.Err()
+}
+
+// ConsumeSingleMessage — читает одно сообщение из очереди (неблокирующий метод)
+func (rc *RabbitMQClient) ConsumeSingleMessage(ctx context.Context, queueName string) (*models.RabbitMQMessage, error) {
+	_, err := rc.channel.QueueDeclare(
+		queueName, true, false, false, false, nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("объявление очереди не удалось: %w", err)
+	}
+
+	msg, ok, err := rc.channel.Get(queueName, false)
+	if err != nil {
+		return nil, fmt.Errorf("не удалось получить сообщение: %w", err)
+	}
+
+	if !ok {
+		// очередь пуста
+		return nil, fmt.Errorf("очередь пуста")
+	}
+
+	var m models.RabbitMQMessage
+	if err := json.Unmarshal(msg.Body, &m); err != nil {
+		msg.Nack(false, true) // возвращаем обратно если не смогли распарсить
+		return nil, fmt.Errorf("не удалось распаковать сообщение: %w", err)
+	}
+
+	// подтверждаем получение сообщения
+	msg.Ack(false)
+
+	return &m, nil
 }
 
 // RetryMessage — повторная отправка сообщения через delay.

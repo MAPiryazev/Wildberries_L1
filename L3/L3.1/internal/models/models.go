@@ -19,6 +19,7 @@ type RedisMessage struct {
 	UpdatedAt time.Time
 }
 
+// CreateNotificationRequest модель запроса на создание уведомления
 type CreateNotificationRequest struct {
 	To      string    `json:"to"`
 	Subject string    `json:"subject"`

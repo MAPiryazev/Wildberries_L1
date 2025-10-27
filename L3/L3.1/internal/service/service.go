@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"math"
 	"time"
 
@@ -127,6 +128,43 @@ func (ns *NotificationService) StartWorker(ctx context.Context) error {
 	return ns.queue.Consume(ctx, ns.queueNameReady, func(msg *models.RabbitMQMessage) error {
 		return ns.handleMessage(ctx, msg)
 	})
+}
+
+// StartDelayedWorker — запускает воркер для переноса сообщений из delayed в ready очередь
+func (ns *NotificationService) StartDelayedWorker(ctx context.Context) error {
+	ticker := time.NewTicker(5 * time.Second) // проверяем каждые 5 секунд
+	defer ticker.Stop()
+
+	log.Println("Delayed worker запущен")
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Delayed worker остановлен")
+			return ctx.Err()
+		case <-ticker.C:
+			// Пытаемся получить сообщение из delayed очереди
+			msg, err := ns.queue.ConsumeSingleMessage(ctx, ns.queueNameDelayed)
+			if err != nil {
+				continue // если ошибка или очередь пуста - пропускаем
+			}
+
+			// Проверяем, наступило ли время отправки
+			if time.Now().After(msg.SendAt) || time.Now().Equal(msg.SendAt) {
+				// Время пришло - переносим в ready очередь
+				if err := ns.queue.Publish(ctx, ns.queueNameReady, msg); err != nil {
+					log.Printf("Ошибка при переносе сообщения в ready очередь: %v", err)
+					continue
+				}
+				log.Printf("Сообщение %s перенесено из delayed в ready очередь", msg.ID)
+			} else {
+				// Время еще не пришло - возвращаем сообщение обратно в delayed очередь
+				if err := ns.queue.Publish(ctx, ns.queueNameDelayed, msg); err != nil {
+					log.Printf("Ошибка при возврате сообщения в delayed очередь: %v", err)
+				}
+			}
+		}
+	}
 }
 
 // handleMessage — основная логика обработки сообщения

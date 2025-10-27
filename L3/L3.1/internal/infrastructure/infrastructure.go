@@ -19,6 +19,7 @@ type CacheClient interface {
 type QueueMQClient interface {
 	Publish(ctx context.Context, queueName string, message *models.RabbitMQMessage) error
 	Consume(ctx context.Context, queueName string, handler func(msg *models.RabbitMQMessage) error) error
+	ConsumeSingleMessage(ctx context.Context, queueName string) (*models.RabbitMQMessage, error)
 	RetryMessage(ctx context.Context, queueName string, message *models.RabbitMQMessage, delaySecons int) error
 	QueueLength(ctx context.Context, queueName string) (int, error)
 }

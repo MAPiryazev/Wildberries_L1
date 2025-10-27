@@ -8,11 +8,13 @@ import (
 	"L3.1/internal/models"
 )
 
+// GmailNotifier хранит данные пользователя для уведомлений через Gmail
 type GmailNotifier struct {
 	from     string
 	password string
 }
 
+// NewGmailNotifier создает  GmailNotifier
 func NewGmailNotifier(cfgFrom, cfgPassword string) (*GmailNotifier, error) {
 	if cfgFrom == "" || cfgPassword == "" {
 		return nil, fmt.Errorf("поля from и password не должны быть nil")
@@ -23,6 +25,7 @@ func NewGmailNotifier(cfgFrom, cfgPassword string) (*GmailNotifier, error) {
 	}, nil
 }
 
+// Send отправляет уведомления через Gmail SMTP
 func (gn *GmailNotifier) Send(ctx context.Context, msg *models.RabbitMQMessage) error {
 	to := []string{msg.To}
 	body := fmt.Sprintf("Subject: %s\r\n\r\n%s", msg.Subject, msg.Body)
