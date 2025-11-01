@@ -1,0 +1,20 @@
+services:
+  L3.3_db:
+    image: postgres:15
+    container_name: L3.3_db
+    env_file:
+      - environment/.env
+    ports:
+      - "28433:5432"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+      - L3_3_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  L3_3_pgdata:
