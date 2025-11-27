@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Image Processor</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body>
+    <main class="page">
+        <section class="panel">
+            <h1>Image Processor</h1>
+            <form id="uploadForm" class="upload-form">
+                <label class="field">
+                    <span>Файл</span>
+                    <input type="file" name="file" required />
+                </label>
+                <label class="field">
+                    <span>Тип обработки</span>
+                    <select name="processing_type">
+                        <option value="resize">Resize</option>
+                        <option value="thumbnail">Thumbnail</option>
+                        <option value="watermark">Watermark</option>
+                    </select>
+                </label>
+                <button type="submit">Загрузить</button>
+                <p class="hint">Отобразим статус ниже, как только задача попадет в очередь.</p>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Загруженные изображения</h2>
+                <button id="refreshBtn" type="button">Обновить</button>
+            </div>
+            <div id="imagesList" class="images-grid"></div>
+        </section>
+    </main>
+    <script src="/assets/app.js" type="module"></script>
+</body>
+</html>
+
