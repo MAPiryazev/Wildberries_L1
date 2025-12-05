@@ -17,6 +17,8 @@ type Repository interface {
 	CreateBooking(ctx context.Context, booking *models.Booking) (*models.Booking, error)
 	GetBooking(ctx context.Context, eventID, userID int64) (*models.Booking, error)
 	UpdateBookingStatus(ctx context.Context, bookingID int64, status string) error
+	GetBookingsByEventID(ctx context.Context, eventID int64) ([]*models.Booking, error)
+	GetBookingByID(ctx context.Context, bookingID int64) (*models.Booking, error)
 
 	CountActiveBookings(ctx context.Context, eventID int64) (int64, error)
 

@@ -314,3 +314,69 @@ func (p *PostgresRepository) FindExpiredBookings(ctx context.Context) ([]*models
 
 	return bookings, nil
 }
+
+// GetBookingsByEventID возвращает все бронирования для указанного события
+func (p *PostgresRepository) GetBookingsByEventID(ctx context.Context, eventID int64) ([]*models.Booking, error) {
+	rows, err := p.db.QueryContext(ctx, `
+		SELECT id, event_id, user_id, status, created_at, expires_at
+		FROM bookings
+		WHERE event_id = $1
+	`, eventID)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения бронирований для события %d: %w", eventID, err)
+	}
+	defer rows.Close()
+
+	var bookings []*models.Booking
+	for rows.Next() {
+		var b models.Booking
+		if err := rows.Scan(
+			&b.ID,
+			&b.EventID,
+			&b.UserID,
+			&b.Status,
+			&b.CreatedAt,
+			&b.ExpiresAt,
+		); err != nil {
+			return nil, fmt.Errorf("ошибка сканирования брони: %w", err)
+		}
+		bookings = append(bookings, &b)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка при переборе строк бронирований: %w", err)
+	}
+
+	return bookings, nil
+}
+
+// GetBookingByID возвращает бронь по ID
+func (p *PostgresRepository) GetBookingByID(ctx context.Context, bookingID int64) (*models.Booking, error) {
+	if bookingID <= 0 {
+		return nil, fmt.Errorf("невалидный id брони")
+	}
+
+	var b models.Booking
+	query := `
+		SELECT id, event_id, user_id, status, created_at, expires_at
+		FROM bookings
+		WHERE id = $1
+	`
+
+	err := p.db.QueryRowContext(ctx, query, bookingID).Scan(
+		&b.ID,
+		&b.EventID,
+		&b.UserID,
+		&b.Status,
+		&b.CreatedAt,
+		&b.ExpiresAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("ошибка получения брони по ID: %w", err)
+	}
+
+	return &b, nil
+}
