@@ -380,3 +380,42 @@ func (p *PostgresRepository) GetBookingByID(ctx context.Context, bookingID int64
 
 	return &b, nil
 }
+
+// CancelExpiredBookings  пометить все просроченные booked - cancelled
+// и вернуть список отменённых записей.
+func (p *PostgresRepository) CancelExpiredBookings(ctx context.Context) ([]*models.Booking, error) {
+	tx, err := p.db.Master.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка начала транзакции: %w", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.QueryContext(ctx, `
+        UPDATE bookings
+        SET status = 'cancelled'
+        WHERE status = 'booked' AND expires_at < NOW()
+        RETURNING id, event_id, user_id, status, created_at, expires_at
+    `)
+	if err != nil {
+		return nil, fmt.Errorf("ошибка при обновлении просроченных бронирований: %w", err)
+	}
+	defer rows.Close()
+
+	var cancelled []*models.Booking
+	for rows.Next() {
+		var b models.Booking
+		if err := rows.Scan(&b.ID, &b.EventID, &b.UserID, &b.Status, &b.CreatedAt, &b.ExpiresAt); err != nil {
+			return nil, fmt.Errorf("ошибка сканирования отменённой брони: %w", err)
+		}
+		cancelled = append(cancelled, &b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("ошибка при переборе отменённых бронирований: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("ошибка коммита транзакции при отмене бронирований: %w", err)
+	}
+
+	return cancelled, nil
+}

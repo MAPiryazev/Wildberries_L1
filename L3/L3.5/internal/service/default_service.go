@@ -232,3 +232,7 @@ func (s *DefaultService) GetBookingsByEventID(ctx context.Context, eventID int64
 
 	return bookings, nil
 }
+
+func (s *DefaultService) CancelExpiredBookings(ctx context.Context) ([]*models.Booking, error) {
+	return s.repo.CancelExpiredBookings(ctx)
+}

@@ -21,6 +21,6 @@ type Repository interface {
 	GetBookingByID(ctx context.Context, bookingID int64) (*models.Booking, error)
 
 	CountActiveBookings(ctx context.Context, eventID int64) (int64, error)
-
 	FindExpiredBookings(ctx context.Context) ([]*models.Booking, error)
+	CancelExpiredBookings(ctx context.Context) ([]*models.Booking, error)
 }
