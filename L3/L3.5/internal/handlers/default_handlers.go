@@ -8,6 +8,7 @@ import (
 
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.5/internal/models"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.5/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 type DefaultHandler struct {
@@ -102,14 +103,14 @@ func (h *DefaultHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Читаем ID события из query-параметра (для простоты)
-	idParam := r.URL.Query().Get("id")
-	if idParam == "" {
+	// Читаем ID события из path параметра
+	eventIDStr := chi.URLParam(r, "id")
+	if eventIDStr == "" {
 		http.Error(w, "missing event id", http.StatusBadRequest)
 		return
 	}
 
-	eventID, err := strconv.ParseInt(idParam, 10, 64)
+	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil || eventID <= 0 {
 		http.Error(w, "invalid event id", http.StatusBadRequest)
 		return
@@ -147,29 +148,47 @@ func (h *DefaultHandler) BookEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Получаем ID события из query-параметра
-	idParam := r.URL.Query().Get("id")
-	if idParam == "" {
+	// Получаем ID события из path параметра
+	eventIDStr := chi.URLParam(r, "id")
+	if eventIDStr == "" {
 		http.Error(w, "missing event id", http.StatusBadRequest)
 		return
 	}
-	eventID, err := strconv.ParseInt(idParam, 10, 64)
+	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil || eventID <= 0 {
 		http.Error(w, "invalid event id", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем ID пользователя из query-параметра
-	userParam := r.URL.Query().Get("user_id")
-	if userParam == "" {
-		http.Error(w, "missing user id", http.StatusBadRequest)
-		return
+	// Получаем ID пользователя из JSON body или query параметра
+	var input struct {
+		UserID int64 `json:"user_id"`
 	}
-	userID, err := strconv.ParseInt(userParam, 10, 64)
-	if err != nil || userID <= 0 {
+
+	if r.Header.Get("Content-Type") == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		userParam := r.URL.Query().Get("user_id")
+		if userParam == "" {
+			http.Error(w, "missing user id", http.StatusBadRequest)
+			return
+		}
+		var parseErr error
+		input.UserID, parseErr = strconv.ParseInt(userParam, 10, 64)
+		if parseErr != nil {
+			http.Error(w, "invalid user id", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if input.UserID <= 0 {
 		http.Error(w, "invalid user id", http.StatusBadRequest)
 		return
 	}
+	userID := input.UserID
 
 	// Для упрощения считаем, что бронь истекает через 1 час
 	expiresAt := time.Now().Add(time.Hour)
@@ -196,29 +215,47 @@ func (h *DefaultHandler) ConfirmBooking(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Получаем ID события из query-параметра
-	idParam := r.URL.Query().Get("id")
-	if idParam == "" {
+	// Получаем ID события из path параметра
+	eventIDStr := chi.URLParam(r, "id")
+	if eventIDStr == "" {
 		http.Error(w, "missing event id", http.StatusBadRequest)
 		return
 	}
-	eventID, err := strconv.ParseInt(idParam, 10, 64)
+	eventID, err := strconv.ParseInt(eventIDStr, 10, 64)
 	if err != nil || eventID <= 0 {
 		http.Error(w, "invalid event id", http.StatusBadRequest)
 		return
 	}
 
-	// Получаем ID пользователя
-	userParam := r.URL.Query().Get("user_id")
-	if userParam == "" {
-		http.Error(w, "missing user id", http.StatusBadRequest)
-		return
+	// Получаем ID пользователя из JSON body или query параметра
+	var input struct {
+		UserID int64 `json:"user_id"`
 	}
-	userID, err := strconv.ParseInt(userParam, 10, 64)
-	if err != nil || userID <= 0 {
+
+	if r.Header.Get("Content-Type") == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			http.Error(w, "invalid JSON: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	} else {
+		userParam := r.URL.Query().Get("user_id")
+		if userParam == "" {
+			http.Error(w, "missing user id", http.StatusBadRequest)
+			return
+		}
+		var parseErr error
+		input.UserID, parseErr = strconv.ParseInt(userParam, 10, 64)
+		if parseErr != nil {
+			http.Error(w, "invalid user id", http.StatusBadRequest)
+			return
+		}
+	}
+
+	if input.UserID <= 0 {
 		http.Error(w, "invalid user id", http.StatusBadRequest)
 		return
 	}
+	userID := input.UserID
 
 	// Проверяем админский флаг (для Confirm можно ставить через admin=true, чтобы админ мог подтверждать чужие брони)
 	isAdmin := r.URL.Query().Get("admin") == "1"

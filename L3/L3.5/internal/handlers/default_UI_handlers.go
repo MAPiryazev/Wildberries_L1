@@ -8,6 +8,7 @@ import (
 
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.5/internal/models"
 	tmplPkg "github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.5/internal/templates"
+	"github.com/go-chi/chi/v5"
 )
 
 // DefaultHandler уже должен быть объявлен в другом файле:
@@ -175,7 +176,15 @@ func (h *DefaultHandler) UIEventPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eventID, err := getEventIDFromRequest(r)
+	// Пробуем получить из path параметра, если нет - из query
+	eventIDStr := chi.URLParam(r, "id")
+	var eventID int64
+	var err error
+	if eventIDStr != "" {
+		eventID, err = strconv.ParseInt(eventIDStr, 10, 64)
+	} else {
+		eventID, err = getEventIDFromRequest(r)
+	}
 	if err != nil || eventID <= 0 {
 		http.Error(w, "missing or invalid event id", http.StatusBadRequest)
 		return
@@ -216,8 +225,16 @@ func (h *DefaultHandler) UIBookEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// поддерживаем id в query, в форме или в пути
-	eventID, _ := getEventIDFromRequest(r)
+	// Пробуем получить из path параметра, если нет - из query/form
+	eventIDStr := chi.URLParam(r, "id")
+	var eventID int64
+	var err error
+	if eventIDStr != "" {
+		eventID, err = strconv.ParseInt(eventIDStr, 10, 64)
+	} else {
+		eventID, _ = getEventIDFromRequest(r)
+	}
+
 	// гарантируем чтение формы
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid form: "+err.Error(), http.StatusBadRequest)
@@ -260,7 +277,7 @@ func (h *DefaultHandler) UIBookEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// после успешного бронирования — редиректим на страницу события (чтобы можно было подтвердить)
-	http.Redirect(w, r, "/ui/events?id="+strconv.FormatInt(eventID, 10), http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/events/"+strconv.FormatInt(eventID, 10), http.StatusSeeOther)
 }
 
 // UIConfirmBooking — форма подтверждения брони; принимает event id + user_id (или booking id через booking param)
@@ -341,5 +358,5 @@ func (h *DefaultHandler) UIConfirmBooking(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/ui/events?id="+strconv.FormatInt(eventID, 10), http.StatusSeeOther)
+	http.Redirect(w, r, "/ui/events/"+strconv.FormatInt(eventID, 10), http.StatusSeeOther)
 }

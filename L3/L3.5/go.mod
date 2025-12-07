@@ -3,7 +3,9 @@ module github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.5
 go 1.24.5
 
 require (
+	github.com/go-chi/chi/v5 v5.0.12
 	github.com/joho/godotenv v1.5.1
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/wb-go/wbf v0.0.10
 )
 

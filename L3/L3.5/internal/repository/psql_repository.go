@@ -48,7 +48,7 @@ func (p *PostgresRepository) CreateEvent(ctx context.Context, event *models.Even
 
 	var created models.Event
 
-	err := p.db.QueryRowContext(
+	err := p.db.Master.QueryRowContext(
 		ctx,
 		query,
 		event.Title,
@@ -77,7 +77,7 @@ func (p *PostgresRepository) GetEventByID(ctx context.Context, eventID int64) (*
 	WHERE id = $1
 	`
 
-	err := p.db.QueryRowContext(ctx, query, eventID).Scan(
+	err := p.db.Master.QueryRowContext(ctx, query, eventID).Scan(
 		&event.ID,
 		&event.Title,
 		&event.StartTime,
@@ -103,7 +103,7 @@ func (p *PostgresRepository) GetAllEvents(ctx context.Context) ([]*models.Event,
 		ORDER BY start_time
 	`
 
-	rows, err := p.db.QueryContext(ctx, query)
+	rows, err := p.db.Master.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("ошибка repository при получении всех events: %w", err)
 	}
@@ -138,7 +138,7 @@ func (p *PostgresRepository) CreateUser(ctx context.Context, user *models.User) 
 	`
 
 	var created models.User
-	err := p.db.QueryRowContext(ctx, query, user.Name, user.IsAdmin).Scan(
+	err := p.db.Master.QueryRowContext(ctx, query, user.Name, user.IsAdmin).Scan(
 		&created.ID,
 		&created.Name,
 		&created.IsAdmin,
@@ -161,7 +161,7 @@ func (p *PostgresRepository) GetUserByID(ctx context.Context, userID int64) (*mo
 	`
 
 	var user models.User
-	err := p.db.QueryRowContext(ctx, query, userID).Scan(
+	err := p.db.Master.QueryRowContext(ctx, query, userID).Scan(
 		&user.ID,
 		&user.Name,
 		&user.IsAdmin,
@@ -239,7 +239,7 @@ func (p *PostgresRepository) CreateBooking(ctx context.Context, booking *models.
 // GetBooking возвращает бронь по событию и пользователю
 func (p *PostgresRepository) GetBooking(ctx context.Context, eventID, userID int64) (*models.Booking, error) {
 	var b models.Booking
-	err := p.db.QueryRowContext(ctx, `
+	err := p.db.Master.QueryRowContext(ctx, `
 		SELECT id, event_id, user_id, status, created_at, expires_at
 		FROM bookings
 		WHERE event_id = $1 AND user_id = $2
@@ -262,7 +262,7 @@ func (p *PostgresRepository) GetBooking(ctx context.Context, eventID, userID int
 
 // UpdateBookingStatus обновляет статус брони
 func (p *PostgresRepository) UpdateBookingStatus(ctx context.Context, bookingID int64, status string) error {
-	_, err := p.db.ExecContext(ctx, `
+	_, err := p.db.Master.ExecContext(ctx, `
 		UPDATE bookings
 		SET status = $1
 		WHERE id = $2
@@ -276,7 +276,7 @@ func (p *PostgresRepository) UpdateBookingStatus(ctx context.Context, bookingID 
 // CountActiveBookings возвращает количество активных бронирований (booked + confirmed) для события
 func (p *PostgresRepository) CountActiveBookings(ctx context.Context, eventID int64) (int64, error) {
 	var count int64
-	err := p.db.QueryRowContext(ctx, `
+	err := p.db.Master.QueryRowContext(ctx, `
 		SELECT COUNT(*)
 		FROM bookings
 		WHERE event_id = $1 AND status IN ('booked', 'confirmed')
@@ -418,4 +418,12 @@ func (p *PostgresRepository) CancelExpiredBookings(ctx context.Context) ([]*mode
 	}
 
 	return cancelled, nil
+}
+
+// Close закрывает соединение с базой данных
+func (p *PostgresRepository) Close() error {
+	if p.db != nil && p.db.Master != nil {
+		return p.db.Master.Close()
+	}
+	return nil
 }
