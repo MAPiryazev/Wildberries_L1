@@ -13,10 +13,11 @@ import (
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/config"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/db"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/repository"
+	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/service"
 )
 
 func main() {
-	cfg, err := config.Load()
+	cfg, err := config.Load("../../environment/.env")
 	if err != nil {
 		log.Fatalf("failed to load config: %v", err)
 	}
@@ -25,6 +26,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}
+
 	defer func() {
 		if database.Master != nil {
 			database.Master.Close()
@@ -36,24 +38,25 @@ func main() {
 		}
 	}()
 
-	if err := db.RunMigrations(database); err != nil {
+	if err := db.RunMigrations(database, "../../migrations"); err != nil {
 		log.Fatalf("failed to run migrations: %v", err)
 	}
 
-	userRepo := repository.NewUserRepository(database)
-	accountRepo := repository.NewAccountRepository(database)
-	categoryRepo := repository.NewCategoryRepository(database)
-	providerRepo := repository.NewProviderRepository(database)
-	txRepo := repository.NewTransactionRepository(database)
-	analyticsRepo := repository.NewAnalyticsRepository(database)
+	// Инициализация репозиториев
+	repos := &repository.Repositories{
+		User:        repository.NewUserRepository(database),
+		Account:     repository.NewAccountRepository(database),
+		Category:    repository.NewCategoryRepository(database),
+		Provider:    repository.NewProviderRepository(database),
+		Transaction: repository.NewTransactionRepository(database),
+		Analytics:   repository.NewAnalyticsRepository(database),
+	}
 
-	_ = userRepo
-	_ = accountRepo
-	_ = categoryRepo
-	_ = providerRepo
-	_ = txRepo
-	_ = analyticsRepo
+	// Инициализация сервисов
+	services := service.NewServices(repos)
+	fmt.Println(services)
 
+	// Использование сервисов
 	router := http.NewServeMux()
 
 	router.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
@@ -78,6 +81,7 @@ func main() {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	<-sigChan
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

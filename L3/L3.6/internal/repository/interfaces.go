@@ -45,3 +45,13 @@ type AnalyticsRepository interface {
 	GetMedian(ctx context.Context, userID string, from, to string) (string, error)
 	GetPercentile90(ctx context.Context, userID string, from, to string) (string, error)
 }
+
+// Структура для инъекции зависимостей в сервисный слой
+type Repositories struct {
+	User        UserRepository
+	Account     AccountRepository
+	Category    CategoryRepository
+	Provider    ProviderRepository
+	Transaction TransactionRepository
+	Analytics   AnalyticsRepository
+}
