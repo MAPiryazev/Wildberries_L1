@@ -12,6 +12,8 @@ import (
 
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/config"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/db"
+	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/handlers/implementation"
+	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/middleware"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/repository"
 	"github.com/MAPiryazev/Wildberries_L1/tree/main/L3/L3.6/internal/service"
 )
@@ -42,7 +44,6 @@ func main() {
 		log.Fatalf("failed to run migrations: %v", err)
 	}
 
-	// Инициализация репозиториев
 	repos := &repository.Repositories{
 		User:        repository.NewUserRepository(database),
 		Account:     repository.NewAccountRepository(database),
@@ -52,18 +53,42 @@ func main() {
 		Analytics:   repository.NewAnalyticsRepository(database),
 	}
 
-	// Инициализация сервисов
 	services := service.NewServices(repos)
-	fmt.Println(services)
+	handlers := implementation.NewHandlers(services)
 
-	// Использование сервисов
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok"}`))
-	})
+	router.Handle("/", http.FileServer(http.Dir("../../web")))
+
+	chain := middleware.NewChain().
+		Use(middleware.Recovery).
+		Use(middleware.Logger)
+
+	router.Handle("GET /health", chain.Handle(
+		http.HandlerFunc(handlers.Health().Health),
+	))
+
+	txHandler := handlers.Transaction()
+	router.Handle("POST /items", chain.Handle(
+		http.HandlerFunc(txHandler.CreateTransaction),
+	))
+	router.Handle("GET /items", chain.Handle(
+		http.HandlerFunc(txHandler.ListTransactions),
+	))
+	router.Handle("GET /items/{id}", chain.Handle(
+		http.HandlerFunc(txHandler.GetTransaction),
+	))
+	router.Handle("PUT /items/{id}", chain.Handle(
+		http.HandlerFunc(txHandler.UpdateTransaction),
+	))
+	router.Handle("DELETE /items/{id}", chain.Handle(
+		http.HandlerFunc(txHandler.DeleteTransaction),
+	))
+
+	analyticsHandler := handlers.Analytics()
+	router.Handle("GET /analytics", chain.Handle(
+		http.HandlerFunc(analyticsHandler.GetAnalytics),
+	))
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
@@ -81,7 +106,6 @@ func main() {
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	<-sigChan
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
