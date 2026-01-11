@@ -178,6 +178,8 @@ func splitSQLStatements(sqlText string) []string {
 	var res []string
 	var b strings.Builder
 	inSingle := false
+	inDollarQuote := false
+	var dollarTag string
 
 	flush := func() {
 		s := strings.TrimSpace(b.String())
@@ -191,7 +193,43 @@ func splitSQLStatements(sqlText string) []string {
 	for i := 0; i < len(sqlText); i++ {
 		ch := sqlText[i]
 
-		if ch == '\'' {
+		if ch == '$' && !inSingle {
+			j := i + 1
+			for j < len(sqlText) && sqlText[j] != '$' {
+				j++
+			}
+
+			if j < len(sqlText) {
+				tag := sqlText[i+1 : j]
+				isValidTag := true
+				for _, r := range tag {
+					if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_') {
+						isValidTag = false
+						break
+					}
+				}
+
+				if isValidTag {
+					if !inDollarQuote {
+						inDollarQuote = true
+						dollarTag = tag
+						b.WriteString(sqlText[i : j+1])
+						i = j
+						continue
+					} else if tag == dollarTag {
+						inDollarQuote = false
+						dollarTag = ""
+						b.WriteString(sqlText[i : j+1])
+						i = j
+						continue
+					}
+				}
+			}
+			b.WriteByte(ch)
+			continue
+		}
+
+		if ch == '\'' && !inDollarQuote {
 			if inSingle && i+1 < len(sqlText) && sqlText[i+1] == '\'' {
 				b.WriteByte(ch)
 				b.WriteByte(sqlText[i+1])
@@ -204,7 +242,7 @@ func splitSQLStatements(sqlText string) []string {
 			continue
 		}
 
-		if ch == ';' && !inSingle {
+		if ch == ';' && !inSingle && !inDollarQuote {
 			flush()
 			continue
 		}
@@ -213,7 +251,6 @@ func splitSQLStatements(sqlText string) []string {
 	}
 
 	flush()
-
 	return res
 }
 
