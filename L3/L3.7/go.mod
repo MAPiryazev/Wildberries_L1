@@ -9,6 +9,8 @@ require (
 
 require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
+	github.com/go-chi/chi/v5 v5.2.3
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/lib/pq v1.10.9 // indirect

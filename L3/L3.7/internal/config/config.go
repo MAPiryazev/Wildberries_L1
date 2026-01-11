@@ -26,9 +26,8 @@ type Database struct {
 }
 
 type Server struct {
-	Port         int
-	ReadTimeout  int
-	WriteTimeout int
+	Port      int
+	JWTSecret string
 }
 
 type App struct {
@@ -65,14 +64,12 @@ func Load(envPath ...string) (*Config, error) {
 	cfg.SetDefault("postgres.conn_max_lifetime", "15m")
 
 	cfg.SetDefault("server.port", 8080)
-	cfg.SetDefault("server.read_timeout", 10)
-	cfg.SetDefault("server.write_timeout", 10)
+
+	cfg.SetDefault("jwt.secret", "your-secret-key-change-in-production")
+	cfg.SetDefault("jwt.expiration", "24h")
 
 	cfg.SetDefault("app.env", "development")
 	cfg.SetDefault("app.log_level", "debug")
-
-	cfg.SetDefault("jwt.secret", "jwt_secret")
-	cfg.SetDefault("jwt.expiration", "24h")
 
 	lifetime, err := time.ParseDuration(cfg.GetString("postgres.conn_max_lifetime"))
 	if err != nil {
@@ -82,6 +79,11 @@ func Load(envPath ...string) (*Config, error) {
 	expiration, err := time.ParseDuration(cfg.GetString("jwt.expiration"))
 	if err != nil {
 		expiration = 24 * time.Hour
+	}
+
+	jwtSecret := cfg.GetString("server.jwt_secret")
+	if jwtSecret == "" {
+		jwtSecret = cfg.GetString("jwt.secret")
 	}
 
 	appCfg := &Config{
@@ -96,16 +98,15 @@ func Load(envPath ...string) (*Config, error) {
 			ConnMaxLifetime: lifetime,
 		},
 		Server: Server{
-			Port:         cfg.GetInt("server.port"),
-			ReadTimeout:  cfg.GetInt("server.read_timeout"),
-			WriteTimeout: cfg.GetInt("server.write_timeout"),
+			Port:      cfg.GetInt("server.port"),
+			JWTSecret: jwtSecret,
 		},
 		App: App{
 			Env:      cfg.GetString("app.env"),
 			LogLevel: cfg.GetString("app.log_level"),
 		},
 		JWT: JWT{
-			Secret:     cfg.GetString("jwt.secret"),
+			Secret:     jwtSecret,
 			Expiration: expiration,
 		},
 	}

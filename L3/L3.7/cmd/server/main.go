@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,55 +13,98 @@ import (
 
 	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/config"
 	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/db"
-	appErrors "github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/errors"
+	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/handlers"
+	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/middleware"
+	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/repository"
+	"github.com/MAPiryazev/Wildberries_L1/L3/L3.7/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
-	if err := run(); err != nil {
-		log.Fatalf("fatal error: %v", err)
-	}
-}
+	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-func run() error {
 	cfg, err := config.Load()
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		log.Error("failed to load config", "err", err)
+		os.Exit(1)
 	}
 
 	database, err := db.Connect(cfg)
 	if err != nil {
-		return fmt.Errorf("connect to database: %w", err)
+		log.Error("failed to connect to database", "err", err)
+		os.Exit(1)
 	}
-
 	defer func() {
 		if err := db.Close(database); err != nil {
-			log.Printf("[ERROR] close database: %v", err)
+			log.Error("failed to close database", "err", err)
 		}
 	}()
 
-	log.Printf("[INFO] Starting database migrations...")
+	itemRepo := repository.NewItemRepository(database, cfg, log)
+	userRepo := repository.NewUserRepository(database, cfg, log)
 
-	if err := db.RunMigrations(database); err != nil {
-		return fmt.Errorf("migration failed: %w - %s", err, appErrors.ErrMigrationFailed)
+	itemService := service.NewItemService(itemRepo, userRepo, log)
+	userService := service.NewUserService(userRepo, log)
+
+	jwtSecret := cfg.JWT.Secret
+	if jwtSecret == "" {
+		log.Error("jwt secret is empty")
+		os.Exit(1)
 	}
 
-	log.Printf("[INFO] Migrations completed successfully")
-	log.Printf("[INFO] Server configuration loaded - Port: %d, Env: %s", cfg.Server.Port, cfg.App.Env)
-	log.Printf("[INFO] Database connected - Host: %s:%d, DB: %s", cfg.Database.Host, cfg.Database.Port, cfg.Database.Name)
+	handler := handlers.New(itemService, userService, jwtSecret, log)
+
+	router := chi.NewRouter()
+	router.Use(middleware.Logger(log))
+	router.Use(middleware.CORS())
+
+	// Front
+	router.Get("/", serveIndex)
+	router.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.Dir("./web"))))
+
+	// Public auth
+	router.Post("/auth/login", handler.Login)
+
+	// Protected API
+	apiRouter := chi.NewRouter()
+	apiRouter.Use(middleware.JWTAuth(jwtSecret, log))
+	handler.RegisterRoutes(apiRouter)
+	router.Mount("/", apiRouter)
+
+	server := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	go func() {
+		log.Info("starting server", "addr", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("server error", "err", err)
+		}
+	}()
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
 	<-sigChan
 
-	_, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if err := database.Master.Close(); err != nil {
-		log.Printf("[ERROR] Error closing database: %v", err)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("shutdown error", "err", err)
 	}
 
-	log.Printf("[INFO] Server shutdown completed")
+	log.Info("server stopped")
+}
 
-	return nil
+func serveIndex(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+
+	http.ServeFile(w, r, "./web/index.html")
 }

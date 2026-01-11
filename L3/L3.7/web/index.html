@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WarehouseControl</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #dc2626;
+            --success: #059669;
+            --border: #e5e7eb;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --bg: #f9fafb;
+            --surface: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text);
+            background: var(--bg);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .auth-section {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        select, input, button {
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        button.danger {
+            background: var(--danger);
+        }
+
+        button.danger:hover {
+            background: #b91c1c;
+        }
+
+        button.success {
+            background: var(--success);
+        }
+
+        button.success:hover {
+            background: #047857;
+        }
+
+        .user-info {
+            background: var(--bg);
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+            font-size: 13px;
+        }
+
+        .user-info.active {
+            display: block;
+        }
+
+        .user-info strong {
+            color: var(--primary);
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--text-light);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-group button {
+            flex: 1;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        th {
+            background: var(--bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-light);
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            display: none;
+        }
+
+        .alert.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+
+        .alert.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+            display: block;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 5px;
+            justify-content: flex-end;
+        }
+
+        .action-btns button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: var(--text-light);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .loading {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <h1>📦 WarehouseControl</h1>
+                <div class="auth-section">
+                    <select id="roleSelect">
+                        <option value="">-- Выберите роль --</option>
+                        <option value="admin">Admin</option>
+                        <option value="manager">Manager</option>
+                        <option value="viewer">Viewer</option>
+                        <option value="auditor">Auditor</option>
+                    </select>
+                    <button onclick="login()">Войти</button>
+                </div>
+            </div>
+            <div class="user-info" id="userInfo">
+                Текущий пользователь: <strong id="currentUser"></strong> | Роль: <strong id="currentRole"></strong>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="loginAlert" class="alert"></div>
+
+        <div class="content">
+            <!-- Items Panel -->
+            <div class="panel">
+                <h2>Товары на складе</h2>
+                <div class="alert error" id="itemAlert"></div>
+
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('view')">Просмотр</button>
+                    <button class="tab" id="createTabBtn" onclick="switchTab('create')" style="display:none;">Добавить</button>
+                    <button class="tab" id="editTabBtn" onclick="switchTab('edit')" style="display:none;">Редактировать</button>
+                </div>
+
+                <!-- View Tab -->
+                <div id="view-tab" class="tab-content active">
+                    <table id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>SKU</th>
+                                <th>Кол-во</th>
+                                <th>Локация</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                    <div class="empty" id="emptyItems">Нет товаров. Авторизуйтесь для просмотра</div>
+                </div>
+
+                <!-- Create Tab -->
+                <div id="create-tab" class="tab-content">
+                    <div class="form-group">
+                        <label>Название товара</label>
+                        <input type="text" id="createName" placeholder="Например: Шпиндель">
+                    </div>
+                    <div class="form-group">
+                        <label>SKU</label>
+                        <input type="text" id="createSku" placeholder="SKU001">
+                    </div>
+                    <div class="form-group">
+                        <label>Количество</label>
+                        <input type="number" id="createQty" value="1" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Локация</label>
+                        <input type="text" id="createLocation" placeholder="Стеллаж A-1">
+                    </div>
+                    <button onclick="createItem()" class="success" style="width: 100%;">Добавить товар</button>
+                </div>
+
+                <!-- Edit Tab -->
+                <div id="edit-tab" class="tab-content">
+                    <div class="form-group">
+                        <label>Выберите товар</label>
+                        <select id="editItemSelect" onchange="loadItemToEdit()">
+                            <option value="">-- Выберите товар --</option>
+                        </select>
+                    </div>
+                    <div id="editForm" style="display:none;">
+                        <div class="form-group">
+                            <label>Название товара</label>
+                            <input type="text" id="editName" placeholder="Название">
+                        </div>
+                        <div class="form-group">
+                            <label>SKU</label>
+                            <input type="text" id="editSku" placeholder="SKU">
+                        </div>
+                        <div class="form-group">
+                            <label>Количество</label>
+                            <input type="number" id="editQty" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Локация</label>
+                            <input type="text" id="editLocation" placeholder="Локация">
+                        </div>
+                        <div class="btn-group">
+                            <button onclick="updateItem()" class="success">Сохранить</button>
+                            <button id="deleteBtn" onclick="deleteItem()" class="danger" style="display:none;">Удалить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Panel -->
+            <div class="panel">
+                <h2>История изменений</h2>
+                <div class="alert error" id="historyAlert"></div>
+
+                <div class="form-group">
+                    <label>Выберите товар для просмотра истории</label>
+                    <select id="historyItemSelect" onchange="loadItemHistory()">
+                        <option value="">-- Выберите товар --</option>
+                    </select>
+                </div>
+
+                <table id="historyTable" style="display:none;">
+                    <thead>
+                        <tr>
+                            <th>Действие</th>
+                            <th>Кто изменил</th>
+                            <th>Когда</th>
+                            <th>Изменения</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <div class="empty" id="emptyHistory">История будет отображаться здесь</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let currentToken = null;
+        let currentUserId = null;
+        let currentRole = null;
+
+        // Users for demo
+        const DEMO_USERS = {
+            admin: { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Admin User', email: 'admin@warehouse.local' },
+            manager: { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Manager User', email: 'manager@warehouse.local' },
+            viewer: { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Viewer User', email: 'viewer@warehouse.local' },
+            auditor: { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Auditor User', email: 'auditor@warehouse.local' }
+        };
+
+        async function login() {
+            const role = document.getElementById('roleSelect').value;
+            if (!role) {
+                showAlert('loginAlert', 'Пожалуйста, выберите роль', 'error');
+                return;
+            }
+
+            try {
+                const user = DEMO_USERS[role];
+                const resp = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: user.id, role })
+                });
+
+                if (!resp.ok) throw new Error('Ошибка авторизации');
+
+                const data = await resp.json();
+                currentToken = data.token;
+                currentUserId = user.id;
+                currentRole = role;
+
+                document.getElementById('currentUser').textContent = user.name;
+                document.getElementById('currentRole').textContent = role;
+                document.getElementById('userInfo').classList.add('active');
+
+                updatePermissions();
+                loadItems();
+                showAlert('loginAlert', `Вы успешно вошли как ${role}`, 'success');
+            } catch (e) {
+                showAlert('loginAlert', e.message, 'error');
+            }
+        }
+
+        function updatePermissions() {
+            const canCreate = ['admin', 'manager'].includes(currentRole);
+            const canEdit = ['admin', 'manager'].includes(currentRole);
+            const canDelete = ['admin'].includes(currentRole);
+            const canViewHistory = true;
+
+            document.getElementById('createTabBtn').style.display = canCreate ? 'block' : 'none';
+            document.getElementById('editTabBtn').style.display = canEdit ? 'block' : 'none';
+            document.getElementById('deleteBtn').style.display = canDelete ? 'block' : 'none';
+        }
+
+        async function loadItems() {
+            if (!currentToken) return;
+
+            try {
+                const resp = await fetch(`${API_URL}/items`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!resp.ok) throw new Error('Ошибка загрузки товаров');
+
+                const items = await resp.json() || [];
+                displayItems(items);
+                updateItemSelects(items);
+            } catch (e) {
+                showAlert('itemAlert', e.message, 'error');
+            }
+        }
+
+        function displayItems(items) {
+            const tbody = document.querySelector('#itemsTable tbody');
+            tbody.innerHTML = '';
+
+            if (!items.length) {
+                document.getElementById('emptyItems').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('emptyItems').style.display = 'none';
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.sku}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.location}</td>
+                    <td class="action-btns">
+                        <button onclick="selectItemForEdit('${item.id}')" style="background:#666;">Редакт.</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function updateItemSelects(items) {
+            const selects = ['editItemSelect', 'historyItemSelect'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const currentValue = select.value;
+                select.innerHTML = '<option value="">-- Выберите товар --</option>';
+                items.forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = `${item.name} (${item.sku})`;
+                    select.appendChild(opt);
+                });
+                select.value = currentValue;
+            });
+        }
+
+        async function createItem() {
+            if (!currentToken) {
+                showAlert('itemAlert', 'Требуется авторизация', 'error');
+                return;
+            }
+
+            const req = {
+                name: document.getElementById('createName').value,
+                sku: document.getElementById('createSku').value,
+                quantity: parseInt(document.getElementById('createQty').value),
+                location: document.getElementById('createLocation').value
+            };
+
+            if (!req.name || !req.sku || !req.location) {
+                showAlert('itemAlert', 'Заполните все поля', 'error');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_URL}/items`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify(req)
+                });
+
+                if (!resp.ok) throw new Error('Ошибка создания товара');
+
+                document.getElementById('createName').value = '';
+                document.getElementById('createSku').value = '';
+                document.getElementById('createQty').value = '1';
+                document.getElementById('createLocation').value = '';
+
+                loadItems();
+                showAlert('itemAlert', 'Товар успешно добавлен', 'success');
+            } catch (e) {
+                showAlert('itemAlert', e.message, 'error');
+            }
+        }
+
+        function selectItemForEdit(itemId) {
+            document.getElementById('editItemSelect').value = itemId;
+            loadItemToEdit();
+            switchTab('edit');
+        }
+
+        async function loadItemToEdit() {
+            const itemId = document.getElementById('editItemSelect').value;
+            if (!itemId) {
+                document.getElementById('editForm').style.display = 'none';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_URL}/items/${itemId}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!resp.ok) throw new Error('Ошибка загрузки товара');
+
+                const item = await resp.json();
+                document.getElementById('editName').value = item.name;
+                document.getElementById('editSku').value = item.sku;
+                document.getElementById('editQty').value = item.quantity;
+                document.getElementById('editLocation').value = item.location;
+                document.getElementById('editForm').style.display = 'block';
+                document.getElementById('editForm').dataset.itemId = itemId;
+            } catch (e) {
+                showAlert('itemAlert', e.message, 'error');
+            }
+        }
+
+        async function updateItem() {
+            const itemId = document.getElementById('editForm').dataset.itemId;
+            const req = {
+                name: document.getElementById('editName').value,
+                sku: document.getElementById('editSku').value,
+                quantity: parseInt(document.getElementById('editQty').value),
+                location: document.getElementById('editLocation').value
+            };
+
+            try {
+                const resp = await fetch(`${API_URL}/items/${itemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${currentToken}`
+                    },
+                    body: JSON.stringify(req)
+                });
+
+                if (!resp.ok) throw new Error('Ошибка обновления товара');
+
+                loadItems();
+                showAlert('itemAlert', 'Товар успешно обновлен', 'success');
+            } catch (e) {
+                showAlert('itemAlert', e.message, 'error');
+            }
+        }
+
+        async function deleteItem() {
+            const itemId = document.getElementById('editForm').dataset.itemId;
+            if (!confirm('Вы уверены?')) return;
+
+            try {
+                const resp = await fetch(`${API_URL}/items/${itemId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!resp.ok) throw new Error('Ошибка удаления товара');
+
+                document.getElementById('editItemSelect').value = '';
+                document.getElementById('editForm').style.display = 'none';
+                loadItems();
+                showAlert('itemAlert', 'Товар успешно удален', 'success');
+            } catch (e) {
+                showAlert('itemAlert', e.message, 'error');
+            }
+        }
+
+        async function loadItemHistory() {
+            const itemId = document.getElementById('historyItemSelect').value;
+            if (!itemId) {
+                document.getElementById('historyTable').style.display = 'none';
+                document.getElementById('emptyHistory').style.display = 'block';
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_URL}/items/${itemId}/history?limit=20`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!resp.ok) throw new Error('Ошибка загрузки истории');
+
+                const history = await resp.json() || [];
+                displayHistory(history);
+            } catch (e) {
+                showAlert('historyAlert', e.message, 'error');
+            }
+        }
+
+        function displayHistory(history) {
+            const tbody = document.querySelector('#historyTable tbody');
+            tbody.innerHTML = '';
+
+            if (!history.length) {
+                document.getElementById('historyTable').style.display = 'none';
+                document.getElementById('emptyHistory').style.display = 'block';
+                return;
+            }
+
+            document.getElementById('historyTable').style.display = 'table';
+            document.getElementById('emptyHistory').style.display = 'none';
+
+            history.forEach(h => {
+                const row = document.createElement('tr');
+                const date = new Date(h.created_at).toLocaleString('ru-RU');
+                row.innerHTML = `
+                    <td>${h.action}</td>
+                    <td>${h.changed_by.substring(0, 8)}...</td>
+                    <td>${date}</td>
+                    <td style="font-size:11px; max-width:200px; word-break:break-word;">${h.changes}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showAlert(elementId, message, type) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `alert ${type}`;
+            setTimeout(() => el.className = 'alert', 5000);
+        }
+    </script>
+</body>
+</html>
