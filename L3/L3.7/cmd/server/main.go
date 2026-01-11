@@ -23,7 +23,7 @@ import (
 func main() {
 	log := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	cfg, err := config.Load()
+	cfg, err := config.Load("environment/.env")
 	if err != nil {
 		log.Error("failed to load config", "err", err)
 		os.Exit(1)
@@ -34,6 +34,12 @@ func main() {
 		log.Error("failed to connect to database", "err", err)
 		os.Exit(1)
 	}
+
+	if err := db.RunMigrations(database); err != nil {
+		log.Error("failed to run migrations", "err", err)
+		os.Exit(1)
+	}
+
 	defer func() {
 		if err := db.Close(database); err != nil {
 			log.Error("failed to close database", "err", err)
@@ -69,7 +75,7 @@ func main() {
 	apiRouter := chi.NewRouter()
 	apiRouter.Use(middleware.JWTAuth(jwtSecret, log))
 	handler.RegisterRoutes(apiRouter)
-	router.Mount("/", apiRouter)
+	router.Mount("/api", apiRouter)
 
 	server := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
