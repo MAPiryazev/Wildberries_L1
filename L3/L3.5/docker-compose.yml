@@ -1,0 +1,31 @@
+services:
+  L3.5_db:
+    image: postgres:15
+    container_name: L3.5_db
+    env_file:
+      - environment/.env
+    ports:
+      - "28435:5432"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+      - L3_5_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # redis:
+  #   image: redis:7
+  #   container_name: redis_3.5
+  #   restart: always
+  #   ports:
+  #     - 6375:6375
+  #   volumes:
+  #     - redis-data:/data
+  #   command: ["redis-server","--port", "6375", "--appendonly", "yes", "--notify-keyspace-events", "Ex"]
+
+volumes:
+  L3_5_pgdata:
+#  redis-data: {}

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление складом</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .auth-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .auth-form {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .auth-form h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-login:hover {
+            background: #5568d3;
+        }
+
+        .btn-login:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .auth-error {
+            background: #fee;
+            color: #c33;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .main-container {
+            display: none;
+        }
+
+        .main-container.active {
+            display: block;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            color: #667eea;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .btn-logout {
+            padding: 8px 16px;
+            background: #f44;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-logout:hover {
+            background: #d33;
+        }
+
+        .content {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            color: #999;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #f9f9f9;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #5568d3;
+        }
+
+        .btn-delete {
+            background: #f44;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #d33;
+        }
+
+        .btn-primary {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 900;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .error-msg {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .success-msg {
+            background: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-admin {
+            background: #fee;
+            color: #c33;
+        }
+
+        .badge-manager {
+            background: #fef3cd;
+            color: #856404;
+        }
+
+        .badge-viewer {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .badge-auditor {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Container -->
+    <div class="auth-container" id="authContainer">
+        <form class="auth-form" id="loginForm">
+            <h2>Вход в систему</h2>
+            <div id="authError" class="auth-error" style="display: none;"></div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" placeholder="Введите email" required>
+            </div>
+            <div class="form-group">
+                <label for="role">Роль</label>
+                <select id="role" required>
+                    <option value="">-- Выберите роль --</option>
+                    <option value="admin">Admin</option>
+                    <option value="manager">Manager</option>
+                    <option value="viewer">Viewer</option>
+                    <option value="auditor">Auditor</option>
+                </select>
+            </div>
+            <button type="submit" class="btn-login" id="loginBtn">Войти</button>
+        </form>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container" id="mainContainer">
+        <header>
+            <h1>📦 Управление складом</h1>
+            <div class="user-info">
+                <span id="userName"></span>
+                <span class="user-badge" id="userRole"></span>
+                <button class="btn-logout" id="logoutBtn">Выход</button>
+            </div>
+        </header>
+
+        <div class="content">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="items">Товары</button>
+                <button class="tab-btn" data-tab="history">История</button>
+            </div>
+
+            <!-- Items Tab -->
+            <div id="items" class="tab-content active">
+                <div id="itemsMessage"></div>
+                <div id="itemsContainer">
+                    <button class="btn-primary" id="addItemBtn" style="display: none;">+ Добавить товар</button>
+                    <table id="itemsTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>SKU</th>
+                                <th>Кол-во</th>
+                                <th>Локация</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody"></tbody>
+                    </table>
+                    <div id="itemsEmpty" class="empty-state">Товаров не найдено</div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="tab-content">
+                <div class="card">
+                    <h3>История изменений</h3>
+                    <div class="form-group">
+                        <label for="historyItemSelect">Выберите товар:</label>
+                        <select id="historyItemSelect">
+                            <option value="">-- Выберите товар --</option>
+                        </select>
+                    </div>
+                    <table id="historyTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Действие</th>
+                                <th>Кто изменил</th>
+                                <th>Когда</th>
+                                <th>Изменения</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyBody"></tbody>
+                    </table>
+                    <div id="historyEmpty" class="empty-state">История будет отображаться здесь</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Item Modal -->
+    <div class="modal" id="itemModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="itemModalTitle">Добавить товар</h2>
+                <button type="button" class="close-btn" id="closeItemModal">&times;</button>
+            </div>
+            <form id="itemForm">
+                <div class="form-group">
+                    <label for="itemName">Название</label>
+                    <input type="text" id="itemName" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemSKU">SKU</label>
+                    <input type="text" id="itemSKU" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemQty">Количество</label>
+                    <input type="number" id="itemQty" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="itemLocation">Локация</label>
+                    <input type="text" id="itemLocation" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-sm" style="background: #ccc;" id="cancelItemBtn">Отмена</button>
+                    <button type="submit" class="btn-sm" style="background: #667eea; color: white;">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+        let token = null;
+        let currentUser = null;
+
+        // Auth handlers
+        const loginForm = document.getElementById('loginForm');
+        const emailSelect = document.getElementById('email');
+        const roleSelect = document.getElementById('role');
+        const authError = document.getElementById('authError');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailSelect.value;
+            const role = roleSelect.value;
+
+            if (!email || !role) {
+                showAuthError('Выберите email и роль');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, role })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showAuthError(data.error || 'Ошибка входа');
+                    return;
+                }
+
+                const data = await response.json();
+                token = data.token;
+                currentUser = { id: data.id, name: data.name, email: data.email, role: data.role };
+                
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                
+                showMainContainer();
+            } catch (err) {
+                showAuthError('Ошибка подключения: ' + err.message);
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            showAuthContainer();
+        });
+
+        function showAuthError(msg) {
+            authError.textContent = msg;
+            authError.style.display = 'block';
+            setTimeout(() => { authError.style.display = 'none'; }, 5000);
+        }
+
+        function showAuthContainer() {
+            document.getElementById('authContainer').style.display = 'flex';
+            document.getElementById('mainContainer').classList.remove('active');
+        }
+
+        function showMainContainer() {
+            document.getElementById('authContainer').style.display = 'none';
+            document.getElementById('mainContainer').classList.add('active');
+            document.getElementById('userName').textContent = currentUser.name;
+            document.getElementById('userRole').textContent = currentUser.role.toUpperCase();
+            loadItems();
+        }
+
+        // Check if already logged in
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('user');
+            const savedToken = localStorage.getItem('token');
+            if (saved && savedToken) {
+                currentUser = JSON.parse(saved);
+                token = savedToken;
+                showMainContainer();
+            }
+        });
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                document.getElementById(e.target.dataset.tab).classList.add('active');
+                if (e.target.dataset.tab === 'history') loadHistoryItems();
+            });
+        });
+
+        // API calls
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const opts = {
+                method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+            if (body) opts.body = JSON.stringify(body);
+            return fetch(`${API_URL}${endpoint}`, opts);
+        }
+
+        async function loadItems() {
+            try {
+                const response = await apiCall('/api/items');
+                if (!response.ok) throw new Error('Failed to load items');
+                
+                const items = await response.json();
+                renderItems(items || []);
+            } catch (err) {
+                document.getElementById('itemsMessage').innerHTML = `<div class="error-msg">${err.message}</div>`;
+            }
+        }
+
+        function renderItems(items) {
+            const tbody = document.getElementById('itemsBody');
+            const table = document.getElementById('itemsTable');
+            const empty = document.getElementById('itemsEmpty');
+            const addBtn = document.getElementById('addItemBtn');
+            
+            tbody.innerHTML = '';
+            
+            if (!items || items.length === 0) {
+                table.style.display = 'none';
+                empty.style.display = 'block';
+                addBtn.style.display = currentUser.role !== 'viewer' && currentUser.role !== 'auditor' ? 'block' : 'none';
+                return;
+            }
+
+            items.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.sku}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.location}</td>
+                    <td>
+                        <div class="btn-group">
+                            ${currentUser.role !== 'viewer' && currentUser.role !== 'auditor' ? `
+                                <button class="btn-sm btn-edit" onclick="editItem('${item.id}')">Редактировать</button>
+                                <button class="btn-sm btn-delete" onclick="deleteItem('${item.id}')">Удалить</button>
+                            ` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            table.style.display = 'table';
+            empty.style.display = 'none';
+            addBtn.style.display = currentUser.role !== 'viewer' && currentUser.role !== 'auditor' ? 'block' : 'none';
+        }
+
+        async function loadHistoryItems() {
+            try {
+                const response = await apiCall('/api/items');
+                const items = await response.json();
+                const select = document.getElementById('historyItemSelect');
+                select.innerHTML = '<option value="">-- Выберите товар --</option>';
+                (items || []).forEach(item => {
+                    const opt = document.createElement('option');
+                    opt.value = item.id;
+                    opt.textContent = item.name;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('historyItemSelect').addEventListener('change', async (e) => {
+            if (!e.target.value) return;
+            try {
+                const response = await apiCall(`/api/items/${e.target.value}/history`);
+                const history = await response.json();
+                renderHistory(history || []);
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function renderHistory(history) {
+            const tbody = document.getElementById('historyBody');
+            const table = document.getElementById('historyTable');
+            const empty = document.getElementById('historyEmpty');
+            
+            tbody.innerHTML = '';
+            
+            if (!history || history.length === 0) {
+                table.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            history.forEach(h => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${h.action}</td>
+                    <td>${h.changed_by}</td>
+                    <td>${new Date(h.created_at).toLocaleString('ru-RU')}</td>
+                    <td><pre style="margin: 0; font-size: 12px;">${JSON.stringify(JSON.parse(h.changes), null, 2)}</pre></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            table.style.display = 'table';
+            empty.style.display = 'none';
+        }
+
+        // Item modal
+        let editingId = null;
+
+        document.getElementById('addItemBtn').addEventListener('click', () => {
+            editingId = null;
+            document.getElementById('itemModalTitle').textContent = 'Добавить товар';
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemModal').classList.add('active');
+        });
+
+        document.getElementById('closeItemModal').addEventListener('click', () => {
+            document.getElementById('itemModal').classList.remove('active');
+        });
+
+        document.getElementById('cancelItemBtn').addEventListener('click', () => {
+            document.getElementById('itemModal').classList.remove('active');
+        });
+
+        document.getElementById('itemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('itemName').value,
+                sku: document.getElementById('itemSKU').value,
+                quantity: parseInt(document.getElementById('itemQty').value),
+                location: document.getElementById('itemLocation').value
+            };
+
+            try {
+                const method = editingId ? 'PUT' : 'POST';
+                const endpoint = editingId ? `/api/items/${editingId}` : '/api/items';
+                
+                const response = await apiCall(endpoint, method, data);
+                if (!response.ok) throw new Error('Failed to save item');
+                
+                document.getElementById('itemModal').classList.remove('active');
+                loadItems();
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        });
+
+        async function editItem(id) {
+            try {
+                const response = await apiCall(`/api/items/${id}`);
+                const item = await response.json();
+                
+                editingId = id;
+                document.getElementById('itemModalTitle').textContent = 'Редактировать товар';
+                document.getElementById('itemName').value = item.name;
+                document.getElementById('itemSKU').value = item.sku;
+                document.getElementById('itemQty').value = item.quantity;
+                document.getElementById('itemLocation').value = item.location;
+                document.getElementById('itemModal').classList.add('active');
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+
+        async function deleteItem(id) {
+            if (!confirm('Вы уверены?')) return;
+            try {
+                const response = await apiCall(`/api/items/${id}`, 'DELETE');
+                if (!response.ok) throw new Error('Failed to delete');
+                loadItems();
+            } catch (err) {
+                alert('Ошибка: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>

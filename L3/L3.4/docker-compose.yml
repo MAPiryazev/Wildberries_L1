@@ -1,0 +1,69 @@
+
+services:
+  # MinIO
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    env_file:
+      - environment/.env
+
+  # Kafka in KRaft mode 
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+
+
+  # # API — Go сервис
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: image_api
+  #   depends_on:
+  #     - kafka
+  #     - minio
+  #   env_file:
+  #     - environment/.env
+  #   ports:
+  #     - "8080:8080"
+
+  # # Worker — Go обработчик изображений
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.worker
+  #   container_name: image_worker
+  #   depends_on:
+  #     - kafka
+  #     - minio
+  #   env_file:
+  #     - environment/.env
+
+volumes:
+  minio_data:
+  kafka_data:

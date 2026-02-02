@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Список событий</title>
+</head>
+<body>
+    <h1>События</h1>
+    <a href="/ui/events/new">Создать новое событие</a>
+    <ul>
+        {{range .}}
+        <li>
+            {{.Title}} — {{.StartTime}} — Свободные места: {{.FreePlaces}}
+            <form action="/ui/events/{{.ID}}/book" method="post" style="display:inline;">
+                <button type="submit">Забронировать</button>
+            </form>
+        </li>
+        {{else}}
+        <li>Событий нет</li>
+        {{end}}
+    </ul>
+</body>
+</html>

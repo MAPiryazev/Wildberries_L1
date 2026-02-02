@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Создать событие</title>
+</head>
+<body>
+    <h1>Создать новое событие</h1>
+    <form action="/ui/events/new" method="post">
+        <label>Название: <input type="text" name="title"></label><br>
+        <label>Дата и время (RFC3339): <input type="text" name="start_time"></label><br>
+        <label>Количество мест: <input type="number" name="capacity"></label><br>
+        <label>Админ? <input type="checkbox" name="admin" value="1"></label><br>
+        <button type="submit">Создать</button>
+    </form>
+    <a href="/ui/events">Вернуться к списку</a>
+</body>
+</html>

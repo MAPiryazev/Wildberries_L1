@@ -1,0 +1,16 @@
+10	apple
+2	pear
+30	banana
+5	apple
+1	cherry
+20	grape
+15	pear
+12	mango
+7	orange
+3	lemon
+Jan	fruit
+Feb	fruit
+Mar	fruit
+5K	file
+1M	file
+500	file

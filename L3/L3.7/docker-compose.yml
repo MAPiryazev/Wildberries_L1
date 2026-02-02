@@ -1,0 +1,19 @@
+services:
+  L3_7_db:
+    image: postgres:16-alpine
+    container_name: L3_7_db
+    env_file:
+      - environment/.env
+    ports:
+      - "35433:5432"
+    volumes:
+      - L3_7_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  L3_7_pgdata:
