@@ -1,9 +1,0 @@
-Hello world
-Golang is cool
-Unix grep clone
-hello again
-Something else
-Hello World
-foo bar
-HELLO again
-no match here
