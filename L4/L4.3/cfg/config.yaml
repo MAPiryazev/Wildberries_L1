@@ -1,0 +1,7 @@
+app:
+  name: 'server-calendar'
+  version: '1.0.0'
+
+log: 'debug'
+host: 'localhost'
+port: '8081'
